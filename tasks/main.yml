@@ -1,0 +1,133 @@
+---
+
+  
+- name: Install dependencies
+  apt: pkg={{ item }} update_cache=yes cache_valid_time=3600
+  with_items:
+  - git
+  - curl
+  - build-essential
+  - libssl-dev
+  tags: nvm
+
+- name: Add {{ nvm_user.group }} group to system
+  group: name="{{nvm_user.group}}" state=present 
+  tags: nvm
+  
+- name: Add nvm user 
+  user: name="{{nvm_user.user}}" group="{{nvm_user.group}}" ssh_key_type="rsa" ssh_key_passphrase="{{nvm_user.passphrase}}" generate_ssh_key=yes ssh_key_bits=2048 shell="/bin/bash" state=present 
+  tags: nvm
+
+- name: Authorize root key to {{ nvm_user.user }}
+  authorized_key: user={{nvm_user.user}} key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+- name: Ensure owner of the nvm directory to {{ nvm_user.user }} user
+  sudo: yes
+  file: path={{ nvm_install_dir}} state=directory owner="{{nvm_user.user}}" group="{{nvm_user.group}}" mode=0770 recurse=yes
+  
+- name: Install nvm 
+  git: repo={{nvm_git_repo}} dest={{nvm_install_dir}} version={{ nvm_version }} force=yes
+  become: yes
+  become_user: "{{nvm_user.user}}"
+  tags: nvm
+
+- name: Change owner of the nvm directory to {{ nvm_user.user }} user
+  sudo: yes
+  file: path={{ nvm_install_dir}} state=directory owner="{{nvm_user.user}}" group="{{nvm_user.group}}" mode=0770 recurse=yes
+
+
+- name: Add All users_profiles to {{ nvm_user.group }} group 
+  user: name={{ item.user }} groups="{{ nvm_user.group }}" append=yes
+  with_items: 
+  - "{{ nvm_users_profiles }}"
+  
+- name: ensure profile exists 
+  file: path="~{{item.user}}/.profile" state=touch owner="{{item.user}}" group="{{item.group}}" mode=0700 
+  with_items: 
+  - "{{nvm_users_profiles}}"
+  - "{{nvm_user}}"
+  tags: nvm
+  
+- name: Source nvm in ~{{item.user}}/.profile of {{nvm_users_profiles}}
+  sudo: yes
+  lineinfile:  dest=~{{item.user}}/.profile  line="source {{nvm_install_dir}}/nvm.sh"
+  with_items:
+  - "{{nvm_users_profiles}}"
+  - "{{nvm_user}}"
+  tags: nvm
+
+- name: ensure bash_profile exists 
+  file: path="~{{item.user}}/.bash_profile" state=touch owner="{{item.user}}" group="{{item.group}}" mode=0700 
+  with_items: 
+  - "{{nvm_users_profiles}}"
+  - "{{nvm_user}}"
+  tags: nvm
+  
+- name: Source nvm in ~{{item.user}}/.bash_profile of {{nvm_users_profiles}}
+  sudo: yes
+  lineinfile:  dest=~{{item.user}}/.bash_profile  line="source {{nvm_install_dir}}/nvm.sh"
+  with_items:
+  - "{{nvm_users_profiles}}"
+  - "{{nvm_user}}"
+  tags: nvm
+
+- name: Install {{ nvm_node_version }}
+  command:  sudo -iu {{nvm_user.user}}  nvm install {{ nvm_node_version }}
+  register: nvm_install_result
+  tags: nvm
+
+- debug:  var=nvm_install_result
+  tags: nvm
+
+- name: Check if {{ nvm_node_version }} is the default node version
+  command:  sudo -iu {{nvm_user.user}} nvm ls 
+  register: nvm_check_default
+  failed_when: "'{{nvm_node_default_version_pattern}}' not in nvm_check_default.stdout"
+  tags: nvm
+
+
+- debug:  var=nvm_check_default
+  tags: nvm
+
+- name: Set default node version to {{ nvm_node_version }} 
+  command:  sudo -iu {{item.user}} nvm alias default {{nvm_node_version}}
+  with_items:
+  - "{{nvm_users_profiles}}"
+  - "{{nvm_user}}"
+  when: nvm_check_default|failed
+  tags: nvm
+
+
+# Installation of additional datas
+
+- name: List existing global packages 
+  command: sudo -iu {{ nvm_user.user }} npm ls --global --depth 0
+  register: nvm_npm_installed_packaged
+  
+- name: install default global packages
+  command: sudo -iu {{nvm_user.user}} npm install --global {{item}}     
+  ignore_errors: yes
+  when: item not in nvm_npm_installed_packaged.stdout
+  with_items:
+  - "{{nvm_npm_pkg}}"
+
+- name: list globally install packages 
+  shell:  "sudo -iu {{nvm_user.user}} npm  ls --global --depth=0"
+  register: installed_packages
+
+- debug: var=installed_packages 
+
+- name: install yeomann 
+  command:  sudo -iu {{nvm_user.user}} npm install -g yo
+  register: install_yo
+  when: installed_packages.stdout.find('yo') == -1
+  ignore_errors: yes
+
+- name: install yeoman generators 
+  command: sudo -iu {{nvm_user.user}} npm install -g {{item}}
+  with_items:
+  - "{{nvm_yo_gen}}"
+  when: ( installed_packages.stdout.find('yo') != -1 or install_yo.changed ) and installed_packages.stdout.find('{{item}}') == -1 
+  ignore_errors: yes
+
+

@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  author: Tony Deboschère 
+  description:  Install NodeJS via NVM (Node Version Manager) for a list of users
+  company: www.neovia.fr
+  license: GPLv2
+  min_ansible_version: 1.9
+  platforms:
+  - name: Ubuntu
+    versions:
+    - trusty
+  categories:
+  - development
+dependencies: []
+  

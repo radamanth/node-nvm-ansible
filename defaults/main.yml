@@ -1,0 +1,39 @@
+---
+# Nvm user that will own the nvm installation
+nvm_user: {user: 'nvm', group: 'nvm', passphrase: "nvmpassphrase" }
+
+#cnvm git repository 
+nvm_git_repo: "https://github.com/creationix/nvm.git"
+# Nvm version
+nvm_version: v0.25.3
+# nvm install dir
+nvm_install_dir: /opt/nvm
+# wich verison of version of node do you desire 
+nvm_node_version: '0.12.4'
+# any package you would like to ionstall globally ? 
+nvm_npm_pkg:
+  - bower
+  - coffee-script
+  - jade
+  - less
+  - express
+  - prettyjson
+  - forever
+  - grunt-forever
+  - pngquant-bin
+  - imagemin-gifsicle
+  - imagemin-jpegtran
+  - imagemin-optipng
+  - imagemin-pngquant
+  - grunt-cli
+# Any Yeoman generator you want at your services?
+nvm_yo_gen:
+  - generator-angular-fullstack
+  - generator-jhipster
+# Users profiles that will be updated to have node and nvm in path .
+nvm_users_profiles: 
+  - { user: "auserwhousenode", group: "hisgroup"}
+# Arbitrary phrase playbook  will be looking for in 'nvm ls' result stdout 
+nvm_node_default_version_pattern: "node -> stable (-> v{{ nvm_node_version }}) (default)"
+
+
