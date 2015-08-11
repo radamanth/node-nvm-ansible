@@ -125,7 +125,7 @@
 - debug: var=installed_packages 
 
 - name: install yeomann 
-  command:  sudo -i u {{nvm_user.user}} npm install -g yo
+  command:  sudo -i -u {{nvm_user.user}} npm install -g yo
   register: install_yo
   when: installed_packages.stdout.find('yo') == -1
   ignore_errors: yes
