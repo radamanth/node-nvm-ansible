@@ -40,6 +40,7 @@
   user: name={{ item.user }} groups="{{ nvm_user.group }}" append=yes
   with_items: 
   - "{{ nvm_users_profiles }}"
+  - { user: root }
   
 - name: ensure profile exists 
   file: path="~{{item.user}}/.profile" state=touch owner="{{item.user}}" group="{{item.group}}" mode=0700 
