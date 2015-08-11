@@ -1,5 +1,4 @@
 ---
-
   
 - name: Install dependencies
   apt: pkg={{ item }} update_cache=yes cache_valid_time=3600
@@ -37,9 +36,9 @@
 
 
 - name: Add All users_profiles to {{ nvm_user.group }} group 
-  user: name={{ item.user }} groups="{{ nvm_user.group }}" append=yes
+  user: name="{{item.user}}" groups="{{ nvm_user.group }}" append=yes
   with_items: 
-  - "{{ nvm_users_profiles }}"
+  - "{{nvm_users_profiles}}"
   - { user: root }
   
 - name: ensure profile exists 
@@ -66,7 +65,17 @@
   - "{{nvm_user}}"
   - { user: root , group: root}
   tags: nvm
-  
+
+
+- name: ensure bash-profile load bashrc
+  lineinfile: dest="~{{item.user}}/.bash_profile" line="if [ -n \"$BASH_VERSION\" ]; then\n\t# include .bashrc if it exists\n\tif [ -f \"$HOME/.bashrc\" ]; then\n\t\t. \"$HOME/.bashrc\"\n\tfi\nfi\n" 
+  with_items: 
+  - "{{nvm_users_profiles}}"
+  - "{{nvm_user}}"
+  - { user: root, group: root }
+  tags: nvm
+
+
 - name: Source nvm in ~{{item.user}}/.bash_profile of {{nvm_users_profiles}}
   sudo: yes
   lineinfile:  dest=~{{item.user}}/.bash_profile  line="source {{nvm_install_dir}}/nvm.sh"
