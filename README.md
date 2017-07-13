@@ -1,4 +1,4 @@
-radamanth.maven-ansible 
+radamanth.node-nvm-ansible
 =========
 
 This role install node via nvm.
